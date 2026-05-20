@@ -248,8 +248,9 @@ Be concise but thorough."""
                 json={
                     "model": MIMO_MODEL,
                     "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 1000,
-                    "temperature": 0.7
+                    "max_tokens": 2000,
+                    "temperature": 0.7,
+                    "stream": False
                 },
                 timeout=30.0
             )
@@ -260,7 +261,8 @@ Be concise but thorough."""
             else:
                 return "AI analysis unavailable at the moment."
     except Exception as e:
-        return f"AI analysis error: {str(e)}"
+        import traceback
+        return f"AI analysis error: {str(e)}\n{traceback.format_exc()}"
 
 
 @app.get("/", response_class=HTMLResponse)
