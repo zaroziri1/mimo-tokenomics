@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiMo Tokenomics Simulator</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --text-primary: #e0e0e0;
+            --text-secondary: #888;
+            --accent: #6c5ce7;
+            --accent-light: #a29bfe;
+            --success: #00b894;
+            --danger: #d63031;
+            --warning: #fdcb6e;
+            --border: #2d2d3d;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 40px 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 30px;
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: var(--accent);
+            color: white;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 1024px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+        }
+        
+        .card h2 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: var(--accent-light);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card h2 .icon {
+            font-size: 1.4rem;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        
+        .form-section {
+            margin-bottom: 24px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .form-section h3 {
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 16px;
+        }
+        
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .preset-btn {
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        
+        .preset-btn:hover {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        
+        .preset-btn.active {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            background: var(--accent-light);
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+        }
+        
+        .btn-outline:hover {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-card {
+            background: var(--bg-tertiary);
+            padding: 16px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-card .label {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 4px;
+        }
+        
+        .stat-card .value {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .stat-card .change {
+            font-size: 0.85rem;
+            margin-top: 4px;
+        }
+        
+        .change.positive { color: var(--success); }
+        .change.negative { color: var(--danger); }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 24px;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 8px 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+        
+        .tab:hover {
+            color: var(--text-primary);
+            border-color: var(--accent);
+        }
+        
+        .tab.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        
+        .ai-analysis {
+            background: var(--bg-tertiary);
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 3px solid var(--accent);
+            margin-top: 20px;
+        }
+        
+        .ai-analysis h3 {
+            color: var(--accent-light);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .ai-analysis .content {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            white-space: pre-wrap;
+        }
+        
+        .risk-meter {
+            height: 8px;
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .risk-meter .fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s;
+        }
+        
+        .risk-low { background: var(--success); }
+        .risk-medium { background: var(--warning); }
+        .risk-high { background: var(--danger); }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 12px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .hidden { display: none; }
+        
+        .distribution-bar {
+            display: flex;
+            height: 24px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+        
+        .distribution-bar .segment {
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .distribution-bar .segment:hover {
+            opacity: 0.8;
+        }
+        
+        .distribution-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 12px;
+        }
+        
+        .distribution-legend .item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .distribution-legend .color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔮 MiMo Tokenomics Simulator</h1>
+            <p>AI-powered token economics simulation platform</p>
+            <span class="badge">Powered by MiMo v2.5 Pro</span>
+        </header>
+        
+        <div class="grid">
+            <!-- Input Panel -->
+            <div class="card">
+                <h2><span class="icon">⚙️</span> Configuration</h2>
+                
+                <div class="form-section">
+                    <h3>Presets</h3>
+                    <div class="preset-buttons">
+                        <button class="preset-btn" onclick="loadPreset('defi')">DeFi Token</button>
+                        <button class="preset-btn" onclick="loadPreset('gaming')">Gaming Token</button>
+                        <button class="preset-btn" onclick="loadPreset('governance')">Governance</button>
+                        <button class="preset-btn" onclick="loadPreset('meme')">Meme Token</button>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h3>Basic Parameters</h3>
+                    <div class="form-group">
+                        <label>Token Name</label>
+                        <input type="text" id="tokenName" value="MiMo Token">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Total Supply</label>
+                            <input type="number" id="totalSupply" value="1000000000">
+                        </div>
+                        <div class="form-group">
+                            <label>Initial Price ($)</label>
+                            <input type="number" id="initialPrice" value="0.01" step="0.001">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Initial Circulating Supply</label>
+                        <input type="number" id="initialCirculating" value="100000000">
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h3>Token Distribution (%)</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Team</label>
+                            <input type="number" id="teamPct" value="15">
+                        </div>
+                        <div class="form-group">
+                            <label>Investors</label>
+                            <input type="number" id="investorsPct" value="20">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Community</label>
+                            <input type="number" id="communityPct" value="30">
+                        </div>
+                        <div class="form-group">
+                            <label>Treasury</label>
+                            <input type="number" id="treasuryPct" value="15">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Staking</label>
+                            <input type="number" id="stakingPct" value="10">
+                        </div>
+                        <div class="form-group">
+                            <label>Liquidity</label>
+                            <input type="number" id="liquidityPct" value="10">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h3>Vesting Schedule</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Team Cliff (months)</label>
+                            <input type="number" id="teamCliff" value="12">
+                        </div>
+                        <div class="form-group">
+                            <label>Team Vesting (months)</label>
+                            <input type="number" id="teamVesting" value="36">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Investors Cliff (months)</label>
+                            <input type="number" id="investorsCliff" value="6">
+                        </div>
+                        <div class="form-group">
+                            <label>Investors Vesting (months)</label>
+                            <input type="number" id="investorsVesting" value="24">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h3>Economics</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Inflation Rate (%/year)</label>
+                            <input type="number" id="inflationRate" value="5">
+                        </div>
+                        <div class="form-group">
+                            <label>Burn Rate (%)</label>
+                            <input type="number" id="burnRate" value="2">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Staking APY (%)</label>
+                            <input type="number" id="stakingApy" value="15">
+                        </div>
+                        <div class="form-group">
+                            <label>Demand Growth (%/month)</label>
+                            <input type="number" id="demandGrowth" value="10">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Volatility (%)</label>
+                            <input type="number" id="volatility" value="30">
+                        </div>
+                        <div class="form-group">
+                            <label>Simulation (months)</label>
+                            <input type="number" id="simMonths" value="36">
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="btn" onclick="runSimulation()">
+                    🚀 Run Simulation
+                </button>
+            </div>
+            
+            <!-- Results Panel -->
+            <div class="card">
+                <h2><span class="icon">📊</span> Simulation Results</h2>
+                
+                <div id="resultsArea">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <span>Configure parameters and run simulation...</span>
+                    </div>
+                </div>
+                
+                <div id="statsArea" class="hidden">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="label">Final Price</div>
+                            <div class="value" id="finalPrice">$0.00</div>
+                            <div class="change" id="priceChange">+0%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Market Cap</div>
+                            <div class="value" id="marketCap">$0</div>
+                            <div class="change">Final</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Max Price</div>
+                            <div class="value" id="maxPrice">$0.00</div>
+                            <div class="change positive">Peak</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Min Price</div>
+                            <div class="value" id="minPrice">$0.00</div>
+                            <div class="change negative">Trough</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Sharpe Ratio</div>
+                            <div class="value" id="sharpeRatio">0.00</div>
+                            <div class="change">Risk-adjusted</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="label">Max Drawdown</div>
+                            <div class="value" id="maxDrawdown">0%</div>
+                            <div class="change negative">Worst drop</div>
+                        </div>
+                    </div>
+                    
+                    <div class="tabs">
+                        <button class="tab active" onclick="showChart('price')">Price</button>
+                        <button class="tab" onclick="showChart('marketcap')">Market Cap</button>
+                        <button class="tab" onclick="showChart('supply')">Supply</button>
+                        <button class="tab" onclick="showChart('staking')">Staking</button>
+                        <button class="tab" onclick="showChart('burned')">Burned</button>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <canvas id="mainChart"></canvas>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3>Distribution</h3>
+                        <div class="distribution-bar" id="distributionBar"></div>
+                        <div class="distribution-legend" id="distributionLegend"></div>
+                    </div>
+                    
+                    <div id="aiAnalysis" class="hidden">
+                        <div class="ai-analysis">
+                            <h3>🤖 MiMo AI Analysis</h3>
+                            <div class="content" id="analysisContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentChart = null;
+        let simulationData = null;
+        let currentChartType = 'price';
+        
+        const COLORS = {
+            team: '#6c5ce7',
+            investors: '#00b894',
+            community: '#fdcb6e',
+            treasury: '#e17055',
+            staking: '#0984e3',
+            liquidity: '#00cec9'
+        };
+        
+        async function loadPreset(type) {
+            try {
+                const response = await fetch('/api/presets');
+                const data = await response.json();
+                
+                if (data.presets[type]) {
+                    const p = data.presets[type].params;
+                    document.getElementById('tokenName').value = data.presets[type].name;
+                    document.getElementById('totalSupply').value = p.total_supply;
+                    document.getElementById('initialPrice').value = p.initial_price;
+                    document.getElementById('initialCirculating').value = p.initial_circulating;
+                    document.getElementById('teamPct').value = p.team_pct;
+                    document.getElementById('investorsPct').value = p.investors_pct;
+                    document.getElementById('communityPct').value = p.community_pct;
+                    document.getElementById('treasuryPct').value = p.treasury_pct;
+                    document.getElementById('stakingPct').value = p.staking_pct;
+                    document.getElementById('liquidityPct').value = p.liquidity_pct;
+                    document.getElementById('inflationRate').value = p.inflation_rate;
+                    document.getElementById('burnRate').value = p.burn_rate;
+                    document.getElementById('stakingApy').value = p.staking_apy;
+                    document.getElementById('demandGrowth').value = p.initial_demand_growth;
+                    document.getElementById('volatility').value = p.volatility;
+                    document.getElementById('simMonths').value = p.simulation_months;
+                    
+                    // Update active state
+                    document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+                    event.target.classList.add('active');
+                }
+            } catch (error) {
+                console.error('Error loading preset:', error);
+            }
+        }
+        
+        async function runSimulation() {
+            const btn = document.querySelector('.btn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;margin:0"></div> Running...';
+            
+            const params = {
+                token_name: document.getElementById('tokenName').value,
+                total_supply: parseFloat(document.getElementById('totalSupply').value),
+                initial_price: parseFloat(document.getElementById('initialPrice').value),
+                initial_circulating: parseFloat(document.getElementById('initialCirculating').value),
+                team_pct: parseFloat(document.getElementById('teamPct').value),
+                investors_pct: parseFloat(document.getElementById('investorsPct').value),
+                community_pct: parseFloat(document.getElementById('communityPct').value),
+                treasury_pct: parseFloat(document.getElementById('treasuryPct').value),
+                staking_pct: parseFloat(document.getElementById('stakingPct').value),
+                liquidity_pct: parseFloat(document.getElementById('liquidityPct').value),
+                team_cliff_months: parseInt(document.getElementById('teamCliff').value),
+                team_vesting_months: parseInt(document.getElementById('teamVesting').value),
+                investors_cliff_months: parseInt(document.getElementById('investorsCliff').value),
+                investors_vesting_months: parseInt(document.getElementById('investorsVesting').value),
+                inflation_rate: parseFloat(document.getElementById('inflationRate').value),
+                burn_rate: parseFloat(document.getElementById('burnRate').value),
+                staking_apy: parseFloat(document.getElementById('stakingApy').value),
+                initial_demand_growth: parseFloat(document.getElementById('demandGrowth').value),
+                volatility: parseFloat(document.getElementById('volatility').value),
+                simulation_months: parseInt(document.getElementById('simMonths').value)
+            };
+            
+            try {
+                const response = await fetch('/api/simulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(params)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    simulationData = data.simulation;
+                    updateStats(data.simulation, params.initial_price);
+                    updateDistribution(params);
+                    showChart(currentChartType);
+                    
+                    // Show AI analysis
+                    if (data.analysis) {
+                        document.getElementById('analysisContent').textContent = data.analysis;
+                        document.getElementById('aiAnalysis').classList.remove('hidden');
+                    }
+                    
+                    document.getElementById('statsArea').classList.remove('hidden');
+                    document.getElementById('resultsArea').innerHTML = '';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('resultsArea').innerHTML = 
+                    '<div class="loading" style="color:var(--danger)">Error running simulation</div>';
+            }
+            
+            btn.disabled = false;
+            btn.innerHTML = '🚀 Run Simulation';
+        }
+        
+        function updateStats(sim, initialPrice) {
+            document.getElementById('finalPrice').textContent = '$' + sim.final_price.toFixed(4);
+            document.getElementById('marketCap').textContent = formatNumber(sim.final_market_cap);
+            document.getElementById('maxPrice').textContent = '$' + sim.max_price.toFixed(4);
+            document.getElementById('minPrice').textContent = '$' + sim.min_price.toFixed(4);
+            document.getElementById('sharpeRatio').textContent = sim.sharpe_ratio.toFixed(2);
+            document.getElementById('maxDrawdown').textContent = (sim.max_drawdown * 100).toFixed(1) + '%';
+            
+            const priceChange = ((sim.final_price - initialPrice) / initialPrice * 100).toFixed(1);
+            const changeEl = document.getElementById('priceChange');
+            changeEl.textContent = (priceChange >= 0 ? '+' : '') + priceChange + '%';
+            changeEl.className = 'change ' + (priceChange >= 0 ? 'positive' : 'negative');
+        }
+        
+        function updateDistribution(params) {
+            const segments = [
+                { name: 'Team', pct: params.team_pct, color: COLORS.team },
+                { name: 'Investors', pct: params.investors_pct, color: COLORS.investors },
+                { name: 'Community', pct: params.community_pct, color: COLORS.community },
+                { name: 'Treasury', pct: params.treasury_pct, color: COLORS.treasury },
+                { name: 'Staking', pct: params.staking_pct, color: COLORS.staking },
+                { name: 'Liquidity', pct: params.liquidity_pct, color: COLORS.liquidity }
+            ];
+            
+            const bar = document.getElementById('distributionBar');
+            bar.innerHTML = segments.map(s => 
+                `<div class="segment" style="width:${s.pct}%;background:${s.color}" title="${s.name}: ${s.pct}%"></div>`
+            ).join('');
+            
+            const legend = document.getElementById('distributionLegend');
+            legend.innerHTML = segments.map(s => 
+                `<div class="item"><div class="color" style="background:${s.color}"></div>${s.name} (${s.pct}%)</div>`
+            ).join('');
+        }
+        
+        function showChart(type) {
+            currentChartType = type;
+            
+            // Update active tab
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if (!simulationData) return;
+            
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            
+            if (currentChart) {
+                currentChart.destroy();
+            }
+            
+            let data, labels, label, color;
+            
+            switch(type) {
+                case 'price':
+                    data = simulationData.price_history;
+                    label = 'Price ($)';
+                    color = '#6c5ce7';
+                    break;
+                case 'marketcap':
+                    data = simulationData.market_cap_history;
+                    label = 'Market Cap ($)';
+                    color = '#00b894';
+                    break;
+                case 'supply':
+                    data = simulationData.circulating_supply_history;
+                    label = 'Circulating Supply';
+                    color = '#fdcb6e';
+                    break;
+                case 'staking':
+                    data = simulationData.staking_ratio_history;
+                    label = 'Staking Ratio';
+                    color = '#0984e3';
+                    break;
+                case 'burned':
+                    data = simulationData.burned_tokens_history;
+                    label = 'Burned Tokens';
+                    color = '#d63031';
+                    break;
+            }
+            
+            labels = simulationData.months.map(m => `Month ${m}`);
+            
+            currentChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        borderColor: color,
+                        backgroundColor: color + '20',
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHitRadius: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    let value = context.parsed.y;
+                                    if (type === 'price' || type === 'marketcap') {
+                                        return '$' + value.toFixed(2);
+                                    }
+                                    return value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: '#2d2d3d'
+                            },
+                            ticks: {
+                                color: '#888',
+                                maxTicksLimit: 10
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: '#2d2d3d'
+                            },
+                            ticks: {
+                                color: '#888',
+                                callback: function(value) {
+                                    if (type === 'price') return '$' + value.toFixed(4);
+                                    if (type === 'marketcap') return formatNumber(value);
+                                    return value.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+        }
+        
+        function formatNumber(num) {
+            if (num >= 1e9) return '$' + (num / 1e9).toFixed(2) + 'B';
+            if (num >= 1e6) return '$' + (num / 1e6).toFixed(2) + 'M';
+            if (num >= 1e3) return '$' + (num / 1e3).toFixed(2) + 'K';
+            return '$' + num.toFixed(2);
+        }
+        
+        // Load default preset
+        loadPreset('defi');
+    </script>
+</body>
+</html>
