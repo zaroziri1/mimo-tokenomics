@@ -4,6 +4,7 @@ AI-powered token economics simulation platform
 """
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
@@ -14,6 +15,15 @@ from datetime import datetime
 import httpx
 
 app = FastAPI(title="MiMo Tokenomics Simulator", version="1.0.0")
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -203,43 +213,7 @@ def run_simulation(params: TokenomicsInput) -> SimulationResult:
 
 async def get_mimo_analysis(params: TokenomicsInput, result: SimulationResult) -> str:
     """Get AI analysis from MiMo"""
-    prompt = f"""Analyze this tokenomics simulation for {params.token_name}:
-
-Token Parameters:
-- Total Supply: {params.total_supply:,.0f}
-- Initial Price: ${params.initial_price}
-- Initial Circulating: {params.initial_circulating:,.0f}
-- Inflation Rate: {params.inflation_rate}% per year
-- Burn Rate: {params.burn_rate}% of transactions
-- Staking APY: {params.staking_apy}%
-
-Distribution:
-- Team: {params.team_pct}%
-- Investors: {params.investors_pct}%
-- Community: {params.community_pct}%
-- Treasury: {params.treasury_pct}%
-- Staking: {params.staking_pct}%
-- Liquidity: {params.liquidity_pct}%
-
-Simulation Results ({params.simulation_months} months):
-- Final Price: ${result.final_price:.4f}
-- Final Market Cap: ${result.final_market_cap:,.0f}
-- Max Price: ${result.max_price:.4f}
-- Min Price: ${result.min_price:.4f}
-- Price Volatility: {result.price_volatility:.2%}
-- Sharpe Ratio: {result.sharpe_ratio:.2f}
-- Max Drawdown: {result.max_drawdown:.2%}
-- Total Burned: {result.total_burned:,.0f} tokens
-- Total Staked: {result.total_staked:,.0f} tokens
-
-Provide:
-1. Overall assessment (Good/Neutral/Bad)
-2. Key strengths and weaknesses
-3. Risk analysis
-4. Optimization recommendations
-5. Market outlook
-
-Be concise but thorough."""
+    prompt = f"Analyze {params.token_name} tokenomics: Supply={params.total_supply:,.0f}, Price=${params.initial_price}, Inflation={params.inflation_rate}%, Burn={params.burn_rate}%, Staking={params.staking_apy}%, Team={params.team_pct}%, Investors={params.investors_pct}%, Community={params.community_pct}%. Sim {params.simulation_months}mo: Final=${result.final_price:.4f}, MCap=${result.final_market_cap:,.0f}, Sharpe={result.sharpe_ratio:.2f}, MaxDD={result.max_drawdown:.2%}. Rate Good/Neutral/Bad. List 3 strengths, 3 weaknesses, 3 recommendations. Be brief."
 
     try:
         async with httpx.AsyncClient() as client:
@@ -248,11 +222,11 @@ Be concise but thorough."""
                 json={
                     "model": MIMO_MODEL,
                     "messages": [{"role": "user", "content": prompt}],
-                    "max_tokens": 2000,
+                    "max_tokens": 800,
                     "temperature": 0.7,
                     "stream": False
                 },
-                timeout=30.0
+                timeout=60.0
             )
             
             if response.status_code == 200:
