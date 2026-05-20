@@ -47,7 +47,7 @@ MiMo Tokenomics Simulator is an advanced platform that simulates token economics
 
 ```bash
 # Clone repository
-git clone https://github.com/YOUR_USERNAME/mimo-tokenomics.git
+git clone https://github.com/zaroziri1/mimo-tokenomics.git
 cd mimo-tokenomics
 
 # Install dependencies
@@ -216,9 +216,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Demo:** [Live Demo](http://43.153.206.68:8080)
-- **Issues:** [GitHub Issues](https://github.com/YOUR_USERNAME/mimo-tokenomics/issues)
-- **Email:** your@email.com
+- **Demo:** [Live Demo](https://diffs-pee-figures-prize.trycloudflare.com)
+- **Issues:** [GitHub Issues](https://github.com/zaroziri1/mimo-tokenomics/issues)
+- **Email:** zaroziri@users.noreply.github.com
 
 ---
 
