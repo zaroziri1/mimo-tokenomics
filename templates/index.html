@@ -571,11 +571,11 @@
                     </div>
                     
                     <div class="tabs">
-                        <button class="tab active" onclick="showChart('price')">Price</button>
-                        <button class="tab" onclick="showChart('marketcap')">Market Cap</button>
-                        <button class="tab" onclick="showChart('supply')">Supply</button>
-                        <button class="tab" onclick="showChart('staking')">Staking</button>
-                        <button class="tab" onclick="showChart('burned')">Burned</button>
+                        <button class="tab active" onclick="showChart('price', this)">Price</button>
+                        <button class="tab" onclick="showChart('marketcap', this)">Market Cap</button>
+                        <button class="tab" onclick="showChart('supply', this)">Supply</button>
+                        <button class="tab" onclick="showChart('staking', this)">Staking</button>
+                        <button class="tab" onclick="showChart('burned', this)">Burned</button>
                     </div>
                     
                     <div class="chart-container">
@@ -651,35 +651,41 @@
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner" style="width:20px;height:20px;margin:0"></div> Running...';
             
-            const params = {
-                token_name: document.getElementById('tokenName').value,
-                total_supply: parseFloat(document.getElementById('totalSupply').value),
-                initial_price: parseFloat(document.getElementById('initialPrice').value),
-                initial_circulating: parseFloat(document.getElementById('initialCirculating').value),
-                team_pct: parseFloat(document.getElementById('teamPct').value),
-                investors_pct: parseFloat(document.getElementById('investorsPct').value),
-                community_pct: parseFloat(document.getElementById('communityPct').value),
-                treasury_pct: parseFloat(document.getElementById('treasuryPct').value),
-                staking_pct: parseFloat(document.getElementById('stakingPct').value),
-                liquidity_pct: parseFloat(document.getElementById('liquidityPct').value),
-                team_cliff_months: parseInt(document.getElementById('teamCliff').value),
-                team_vesting_months: parseInt(document.getElementById('teamVesting').value),
-                investors_cliff_months: parseInt(document.getElementById('investorsCliff').value),
-                investors_vesting_months: parseInt(document.getElementById('investorsVesting').value),
-                inflation_rate: parseFloat(document.getElementById('inflationRate').value),
-                burn_rate: parseFloat(document.getElementById('burnRate').value),
-                staking_apy: parseFloat(document.getElementById('stakingApy').value),
-                initial_demand_growth: parseFloat(document.getElementById('demandGrowth').value),
-                volatility: parseFloat(document.getElementById('volatility').value),
-                simulation_months: parseInt(document.getElementById('simMonths').value)
-            };
-            
             try {
+                const params = {
+                    token_name: document.getElementById('tokenName').value,
+                    total_supply: parseFloat(document.getElementById('totalSupply').value),
+                    initial_price: parseFloat(document.getElementById('initialPrice').value),
+                    initial_circulating: parseFloat(document.getElementById('initialCirculating').value),
+                    team_pct: parseFloat(document.getElementById('teamPct').value),
+                    investors_pct: parseFloat(document.getElementById('investorsPct').value),
+                    community_pct: parseFloat(document.getElementById('communityPct').value),
+                    treasury_pct: parseFloat(document.getElementById('treasuryPct').value),
+                    staking_pct: parseFloat(document.getElementById('stakingPct').value),
+                    liquidity_pct: parseFloat(document.getElementById('liquidityPct').value),
+                    team_cliff_months: parseInt(document.getElementById('teamCliff').value),
+                    team_vesting_months: parseInt(document.getElementById('teamVesting').value),
+                    investors_cliff_months: parseInt(document.getElementById('investorsCliff').value),
+                    investors_vesting_months: parseInt(document.getElementById('investorsVesting').value),
+                    inflation_rate: parseFloat(document.getElementById('inflationRate').value),
+                    burn_rate: parseFloat(document.getElementById('burnRate').value),
+                    staking_apy: parseFloat(document.getElementById('stakingApy').value),
+                    initial_demand_growth: parseFloat(document.getElementById('demandGrowth').value),
+                    volatility: parseFloat(document.getElementById('volatility').value),
+                    simulation_months: parseInt(document.getElementById('simMonths').value)
+                };
+                
+                // Timeout after 90s
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 90000);
+                
                 const response = await fetch('/api/simulate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(params)
+                    body: JSON.stringify(params),
+                    signal: controller.signal
                 });
+                clearTimeout(timeoutId);
                 
                 const data = await response.json();
                 
@@ -687,7 +693,7 @@
                     simulationData = data.simulation;
                     updateStats(data.simulation, params.initial_price);
                     updateDistribution(params);
-                    showChart(currentChartType);
+                    showChart(currentChartType, null);
                     
                     // Show AI analysis
                     if (data.analysis) {
@@ -697,11 +703,15 @@
                     
                     document.getElementById('statsArea').classList.remove('hidden');
                     document.getElementById('resultsArea').innerHTML = '';
+                } else {
+                    document.getElementById('resultsArea').innerHTML = 
+                        '<div class="loading" style="color:var(--danger)">Simulation failed: ' + (data.detail || 'Unknown error') + '</div>';
                 }
             } catch (error) {
                 console.error('Error:', error);
+                const msg = error.name === 'AbortError' ? 'Request timed out (AI analysis taking too long)' : error.message;
                 document.getElementById('resultsArea').innerHTML = 
-                    '<div class="loading" style="color:var(--danger)">Error running simulation</div>';
+                    '<div class="loading" style="color:var(--danger)">Error: ' + msg + '</div>';
             }
             
             btn.disabled = false;
@@ -743,12 +753,14 @@
             ).join('');
         }
         
-        function showChart(type) {
+        function showChart(type, tabElement) {
             currentChartType = type;
             
-            // Update active tab
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
+            // Update active tab (only if called from a tab click)
+            if (tabElement) {
+                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                tabElement.classList.add('active');
+            }
             
             if (!simulationData) return;
             
